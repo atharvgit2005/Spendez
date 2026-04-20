@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const AnalyticsController_1 = require("../controllers/AnalyticsController");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
+router.get('/groups/:id/dashboard', AnalyticsController_1.analyticsController.getDashboard.bind(AnalyticsController_1.analyticsController));
+router.get('/groups/:id/recurring', AnalyticsController_1.analyticsController.getRecurring.bind(AnalyticsController_1.analyticsController));
+router.get('/users/me/summary', AnalyticsController_1.analyticsController.getUserSummary.bind(AnalyticsController_1.analyticsController));
+exports.default = router;

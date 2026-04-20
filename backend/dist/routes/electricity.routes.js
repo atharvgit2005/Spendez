@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ElectricityController_1 = require("../controllers/ElectricityController");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
+router.post('/', ElectricityController_1.electricityController.create.bind(ElectricityController_1.electricityController));
+router.get('/groups/:id', ElectricityController_1.electricityController.getGroupRecords.bind(ElectricityController_1.electricityController));
+exports.default = router;

@@ -4,7 +4,7 @@ import { IPayment } from '../models/Payment';
 import { NotFoundError } from '../errors/AppError';
 import { eventPublisher, Events } from '../events/EventPublisher';
 import { simplifyDebts } from '../utils/debtSimplifier';
-import { Split } from '../models/Split';
+import { SplitRepository } from '../repositories/SplitRepository';
 
 interface CreatePaymentDTO {
   groupId: string;
@@ -18,6 +18,7 @@ interface CreatePaymentDTO {
 
 export class PaymentService {
   private paymentRepo = new PaymentRepository();
+  private splitRepo = new SplitRepository();
 
   async createPayment(dto: CreatePaymentDTO): Promise<IPayment> {
     const payment = await this.paymentRepo.create({
@@ -28,7 +29,7 @@ export class PaymentService {
       status:     'PENDING',
     });
 
-    eventPublisher.emit(Events.PAYMENT_SETTLED, { payment });
+    (eventPublisher as any).emit(Events.PAYMENT_SETTLED, { payment });
 
     return payment;
   }
@@ -50,59 +51,7 @@ export class PaymentService {
     const gid = new Types.ObjectId(groupId);
     
     // Aggregation pipeline to calculate net balances including expenses and settlements
-    const results = await Split.aggregate([
-      // 1. Join with Expenses to filter by GroupId
-      {
-        $lookup: {
-          from: 'expenses',
-          localField: 'expenseId',
-          foreignField: '_id',
-          as: 'expense',
-        },
-      },
-      { $unwind: '$expense' },
-      { $match: { 'expense.groupId': gid } },
-
-      // 2. Separate debts (what participants owe) and credits (what payers are owed)
-      {
-        $facet: {
-          debts: [
-            { $group: { _id: '$userId', totalDebt: { $sum: '$shareAmount' } } }
-          ],
-          credits: [
-            { $group: { _id: '$expense.paidBy', totalCredit: { $sum: '$shareAmount' } } }
-          ],
-          paymentsOut: [
-            {
-              $lookup: {
-                from: 'payments',
-                pipeline: [
-                  { $match: { groupId: gid, status: 'COMPLETED' } },
-                  { $group: { _id: '$fromUserId', amount: { $sum: '$amount' } } }
-                ],
-                as: 'pOut'
-              }
-            },
-            { $unwind: '$pOut' },
-            { $group: { _id: '$pOut._id', totalPaid: { $first: '$pOut.amount' } } }
-          ],
-          paymentsIn: [
-            {
-              $lookup: {
-                from: 'payments',
-                pipeline: [
-                  { $match: { groupId: gid, status: 'COMPLETED' } },
-                  { $group: { _id: '$toUserId', amount: { $sum: '$amount' } } }
-                ],
-                as: 'pIn'
-              }
-            },
-            { $unwind: '$pIn' },
-            { $group: { _id: '$pIn._id', totalReceived: { $first: '$pIn.amount' } } }
-          ]
-        }
-      }
-    ]);
+    const results = await this.splitRepo.calculateGroupBalances(gid);
 
     const balanceMap: Record<string, number> = {};
     const f = results[0];

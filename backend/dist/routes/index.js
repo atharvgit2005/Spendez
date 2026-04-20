@@ -1,0 +1,36 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_routes_1 = __importDefault(require("./auth.routes"));
+const user_routes_1 = __importDefault(require("./user.routes"));
+const group_routes_1 = __importDefault(require("./group.routes"));
+const expense_routes_1 = __importDefault(require("./expense.routes"));
+const split_routes_1 = __importDefault(require("./split.routes"));
+const payment_routes_1 = __importDefault(require("./payment.routes"));
+const budget_routes_1 = __importDefault(require("./budget.routes"));
+const notification_routes_1 = __importDefault(require("./notification.routes"));
+const ocr_routes_1 = __importDefault(require("./ocr.routes"));
+const analytics_routes_1 = __importDefault(require("./analytics.routes"));
+const electricity_routes_1 = __importDefault(require("./electricity.routes"));
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const ExpenseController_1 = require("../controllers/ExpenseController");
+const PaymentController_1 = require("../controllers/PaymentController");
+const router = (0, express_1.Router)();
+router.use('/auth', auth_routes_1.default);
+router.use('/users', user_routes_1.default);
+router.use('/groups', group_routes_1.default);
+router.use('/expenses', expense_routes_1.default);
+router.use('/expenses', split_routes_1.default);
+router.use('/payments', payment_routes_1.default);
+router.use('/budgets', budget_routes_1.default);
+router.use('/notifications', notification_routes_1.default);
+router.use('/ocr', ocr_routes_1.default);
+router.use('/analytics', analytics_routes_1.default);
+router.use('/electricity', electricity_routes_1.default);
+// Nested group expense/payment routes
+router.get('/groups/:id/expenses', auth_middleware_1.authMiddleware, ExpenseController_1.expenseController.getGroupExpenses.bind(ExpenseController_1.expenseController));
+router.get('/groups/:id/payments', auth_middleware_1.authMiddleware, PaymentController_1.paymentController.getGroupPayments.bind(PaymentController_1.paymentController));
+exports.default = router;

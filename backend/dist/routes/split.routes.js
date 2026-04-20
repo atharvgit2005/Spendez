@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const SplitController_1 = require("../controllers/SplitController");
+const auth_middleware_1 = require("../middleware/auth.middleware");
+const validate_middleware_1 = require("../middleware/validate.middleware");
+const split_dto_1 = require("../dtos/split.dto");
+const router = (0, express_1.Router)();
+router.use(auth_middleware_1.authMiddleware);
+router.post('/:id/split', (0, validate_middleware_1.validate)(split_dto_1.SplitConfigDTO), SplitController_1.splitController.applySplit.bind(SplitController_1.splitController));
+router.get('/:id/splits', SplitController_1.splitController.getSplits.bind(SplitController_1.splitController));
+exports.default = router;

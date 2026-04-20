@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-const defaultApiBaseUrl = `http://${hostname}:5005/api/v1`;
+const defaultApiBaseUrl = `http://${hostname}:10000/api/v1`;
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl,

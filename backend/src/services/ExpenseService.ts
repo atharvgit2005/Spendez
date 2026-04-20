@@ -3,10 +3,9 @@ import { ExpenseRepository } from '../repositories/ExpenseRepository';
 import { IExpense } from '../models/Expense';
 import { NotFoundError, ForbiddenError } from '../errors/AppError';
 import { eventPublisher, Events } from '../events/EventPublisher';
-import { GroupMember } from '../models/GroupMember';
-import { Group } from '../models/Group';
-import { Expense } from '../models/Expense';
-import { Split } from '../models/Split';
+import { GroupMemberRepository } from '../repositories/GroupMemberRepository';
+import { GroupRepository } from '../repositories/GroupRepository';
+import { SplitRepository } from '../repositories/SplitRepository';
 import { StrategyFactory } from '../factories/StrategyFactory';
 
 interface CreateExpenseDTO {
@@ -30,9 +29,12 @@ interface CreateExpenseDTO {
 
 export class ExpenseService {
   private expenseRepo = new ExpenseRepository();
+  private splitRepo = new SplitRepository();
+  private groupRepo = new GroupRepository();
+  private groupMemberRepo = new GroupMemberRepository();
 
   async createExpense(dto: CreateExpenseDTO): Promise<IExpense> {
-    const group = await Group.findById(dto.groupId);
+    const group = await this.groupRepo.findById(dto.groupId);
     if (!group) throw new NotFoundError('Group', dto.groupId);
 
     const expenseData = {
@@ -47,8 +49,8 @@ export class ExpenseService {
     // 1. Resolve participants
     let participantIds = dto.splitConfig?.participants;
     if (!participantIds || participantIds.length === 0) {
-      const members = await GroupMember.find({ groupId: dto.groupId, isActive: true });
-      participantIds = members.map((m) => m.userId.toString());
+      const members = await this.groupMemberRepo.findByGroup(dto.groupId);
+      participantIds = members.map((m: any) => m.userId.toString());
     }
 
     // 2. Select and execute strategy
@@ -57,7 +59,7 @@ export class ExpenseService {
       expense.id,
       expense.amount,
       {
-        participants: participantIds,
+        participants: participantIds || [],
         percentages:  dto.splitConfig?.percentages,
         weights:      dto.splitConfig?.weights,
         exactAmounts: dto.splitConfig?.exactAmounts,
@@ -65,17 +67,17 @@ export class ExpenseService {
     );
 
     // 3. Persist splits
-    await Split.insertMany(
+    await this.splitRepo.insertMany(
       shares.map((share) => ({
         ...share,
-        expenseId: expense._id,
+        expenseId: (expense as any)._id,
         userId:    new Types.ObjectId(share.userId),
         status:    'PENDING',
       }))
     );
 
     // 4. Notifications
-    eventPublisher.emit(Events.EXPENSE_CREATED, {
+    (eventPublisher as any).emit(Events.EXPENSE_CREATED, {
       expense,
       groupMembers: participantIds,
     });
@@ -109,7 +111,7 @@ export class ExpenseService {
     if (expense.paidBy.toString() !== actorId) {
       throw new ForbiddenError('Only the payer can delete this expense');
     }
-    await Split.deleteMany({ expenseId: expense._id });
+    await this.splitRepo.deleteByExpense((expense as any)._id.toString());
     await this.expenseRepo.delete(id);
   }
 }
