@@ -8,9 +8,13 @@ import { auditMiddleware } from './middleware/audit.middleware';
 import { env } from './config/env';
 import { Database } from './config/db';
 import { AppLogger } from './config/logger';
+import { EventSubscriber } from './events/EventSubscriber';
 
 export const createApp = (): Application => {
   const app = express();
+  
+  // Initialize Event Listeners for Notifications
+  EventSubscriber.init();
 
   // 1. Permissive CORS (Must be first)
   app.use(cors({
