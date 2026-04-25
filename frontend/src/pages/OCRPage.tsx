@@ -7,25 +7,39 @@ const OCRPage = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [receiptResult, setReceiptResult] = useState<any>(null);
 
+  const [showDesktopWarning, setShowDesktopWarning] = useState(() => window.innerWidth > 768);
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setIsScanning(true);
     const formData = new FormData();
-    formData.append('receipt', file);
+    formData.append('file', file);
 
     try {
-      // Assuming OCR endpoint parses receipt and returns extracted data
-      const { data } = await api.post('/ocr/scan', formData, {
+      const { data } = await api.post('/ocr/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      setReceiptResult(data.data);
+      
+      // Map the backend suggested data to what the frontend expects
+      const formattedData = {
+        totalAmount: data.data.suggested.amount,
+        merchant: data.data.suggested.title,
+        category: data.data.suggested.category,
+        date: data.data.suggested.expenseDate,
+        rawText: data.data.rawText,
+        items: [
+          { description: data.data.suggested.title || 'Extracted Items', amount: data.data.suggested.amount }
+        ]
+      };
+      
+      setReceiptResult(formattedData);
       toast.success('Receipt scanned successfully!');
     } catch (error) {
       toast.error('Failed to scan receipt. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsScanning(false);
     }
   };
 
@@ -103,6 +117,35 @@ const OCRPage = () => {
             </button>
           </div>
         </motion.div>
+      )}
+
+      {/* Desktop Warning Modal */}
+      {showDesktopWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-surface-container rounded-[32px] p-8 max-w-sm w-full text-center space-y-6 border border-white/10 shadow-2xl"
+          >
+            <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto text-primary">
+              <span className="material-symbols-outlined text-4xl">smartphone</span>
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-white font-display">Better on Mobile</h2>
+              <p className="text-white/60 text-sm leading-relaxed">
+                For the best experience taking photos of your receipts, we highly recommend opening Spendez on your smartphone!
+              </p>
+            </div>
+
+            <button 
+              onClick={() => setShowDesktopWarning(false)}
+              className="w-full bg-primary text-on-primary font-bold rounded-full py-4 hover:bg-primary/90 transition-transform active:scale-95"
+            >
+              Continue Anyway
+            </button>
+          </motion.div>
+        </div>
       )}
     </div>
   );
