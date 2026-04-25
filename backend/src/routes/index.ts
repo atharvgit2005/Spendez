@@ -14,6 +14,8 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { expenseController } from '../controllers/ExpenseController';
 import { paymentController } from '../controllers/PaymentController';
 
+import aiRoutes           from './ai.routes';
+
 const router = Router();
 
 router.use('/auth',          authRoutes);
@@ -27,6 +29,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/ocr',           ocrRoutes);
 router.use('/analytics',     analyticsRoutes);
 router.use('/electricity',   electricityRoutes);
+router.use('/ai',            aiRoutes);
 
 // Nested group expense/payment routes
 router.get('/groups/:id/expenses', authMiddleware, expenseController.getGroupExpenses.bind(expenseController));

@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
+import api from '../api/client';
+import toast from 'react-hot-toast';
+
 const AIChatPage = () => {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState([
@@ -8,7 +11,7 @@ const AIChatPage = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
 
@@ -18,15 +21,24 @@ const AIChatPage = () => {
     setQuery('');
     setIsTyping(true);
 
-    // Simulate AI response (replace with actual API call)
-    setTimeout(() => {
+    try {
+      const { data } = await api.post('/ai/chat', { message: query });
+      
       setMessages([...newMessages, { 
         id: Date.now() + 1, 
-        text: "I can analyze your spending patterns once we connect the analytics endpoint! For now, your biggest expense category seems to be FOOD.", 
+        text: data.data.text, 
         isUser: false 
       }]);
+    } catch (error) {
+      toast.error('Failed to get AI response');
+      setMessages([...newMessages, { 
+        id: Date.now() + 1, 
+        text: "Sorry, I'm having trouble connecting to my brain right now.", 
+        isUser: false 
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (

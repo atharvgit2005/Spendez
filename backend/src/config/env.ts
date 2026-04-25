@@ -19,6 +19,7 @@ const envSchema = z.object({
   EMAIL_PASS: z.string().optional(),
   CLIENT_URL: z.string().default('http://localhost:5173'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  GEMINI_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
