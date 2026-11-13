@@ -11,13 +11,17 @@ const morgan_1 = __importDefault(require("morgan"));
 const routes_1 = __importDefault(require("./routes"));
 const error_middleware_1 = require("./middleware/error.middleware");
 const audit_middleware_1 = require("./middleware/audit.middleware");
+const env_1 = require("./config/env");
 const db_1 = require("./config/db");
 const logger_1 = require("./config/logger");
+const EventSubscriber_1 = require("./events/EventSubscriber");
 const createApp = () => {
     const app = (0, express_1.default)();
+    // Initialize Event Listeners for Notifications
+    EventSubscriber_1.EventSubscriber.init();
     // 1. Permissive CORS (Must be first)
     app.use((0, cors_1.default)({
-        origin: true,
+        origin: [env_1.env.CLIENT_URL, 'http://localhost:5173'],
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
         allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],

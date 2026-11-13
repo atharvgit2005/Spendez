@@ -20,8 +20,8 @@ class SplitService {
         context.setStrategy(strategy);
         const shares = context.execute(expenseId, expense.amount, config);
         // Delete existing splits for this expense before saving new ones
-        await ISplitDelete(expenseId, this.splitRepo);
-        const splits = await Promise.all(shares.map((share) => this.splitRepo.create({
+        await this.splitRepo.deleteByExpense(expenseId);
+        const splits = await this.splitRepo.insertMany(shares.map((share) => ({
             expenseId: expenseId,
             userId: share.userId,
             shareAmount: share.shareAmount,
@@ -46,7 +46,3 @@ class SplitService {
     }
 }
 exports.SplitService = SplitService;
-async function ISplitDelete(expenseId, splitRepo) {
-    const existing = await splitRepo.findByExpense(expenseId);
-    await Promise.all(existing.map((s) => splitRepo.delete(s.id)));
-}

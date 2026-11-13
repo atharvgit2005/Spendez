@@ -20,7 +20,8 @@ export class AIController {
     } catch (error: any) {
       res.status(500).json({
         success: false,
-        message: 'Failed to process AI chat request'
+        message: 'Failed to process AI chat request',
+        error: error.message || String(error)
       });
     }
   };

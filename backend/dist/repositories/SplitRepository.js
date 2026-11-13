@@ -21,5 +21,63 @@ class SplitRepository {
     async delete(id) {
         await Split_1.Split.findByIdAndDelete(id);
     }
+    async insertMany(splits) {
+        return Split_1.Split.insertMany(splits);
+    }
+    async deleteByExpense(expenseId) {
+        await Split_1.Split.deleteMany({ expenseId });
+    }
+    async calculateGroupBalances(groupId) {
+        return Split_1.Split.aggregate([
+            {
+                $lookup: {
+                    from: 'expenses',
+                    localField: 'expenseId',
+                    foreignField: '_id',
+                    as: 'expense',
+                },
+            },
+            { $unwind: '$expense' },
+            { $match: { 'expense.groupId': groupId } },
+            {
+                $facet: {
+                    debts: [
+                        { $group: { _id: '$userId', totalDebt: { $sum: '$shareAmount' } } }
+                    ],
+                    credits: [
+                        { $group: { _id: '$expense.paidBy', totalCredit: { $sum: '$shareAmount' } } }
+                    ],
+                    paymentsOut: [
+                        {
+                            $lookup: {
+                                from: 'payments',
+                                pipeline: [
+                                    { $match: { groupId, status: 'COMPLETED' } },
+                                    { $group: { _id: '$fromUserId', amount: { $sum: '$amount' } } }
+                                ],
+                                as: 'pOut'
+                            }
+                        },
+                        { $unwind: '$pOut' },
+                        { $group: { _id: '$pOut._id', totalPaid: { $first: '$pOut.amount' } } }
+                    ],
+                    paymentsIn: [
+                        {
+                            $lookup: {
+                                from: 'payments',
+                                pipeline: [
+                                    { $match: { groupId, status: 'COMPLETED' } },
+                                    { $group: { _id: '$toUserId', amount: { $sum: '$amount' } } }
+                                ],
+                                as: 'pIn'
+                            }
+                        },
+                        { $unwind: '$pIn' },
+                        { $group: { _id: '$pIn._id', totalReceived: { $first: '$pIn.amount' } } }
+                    ]
+                }
+            }
+        ]);
+    }
 }
 exports.SplitRepository = SplitRepository;

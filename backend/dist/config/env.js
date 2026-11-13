@@ -23,6 +23,7 @@ const envSchema = zod_1.z.object({
     EMAIL_PASS: zod_1.z.string().optional(),
     CLIENT_URL: zod_1.z.string().default('http://localhost:5173'),
     NODE_ENV: zod_1.z.enum(['development', 'production', 'test']).default('development'),
+    GEMINI_API_KEY: zod_1.z.string().optional(),
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

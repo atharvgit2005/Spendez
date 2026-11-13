@@ -18,6 +18,7 @@ const electricity_routes_1 = __importDefault(require("./electricity.routes"));
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const ExpenseController_1 = require("../controllers/ExpenseController");
 const PaymentController_1 = require("../controllers/PaymentController");
+const ai_routes_1 = __importDefault(require("./ai.routes"));
 const router = (0, express_1.Router)();
 router.use('/auth', auth_routes_1.default);
 router.use('/users', user_routes_1.default);
@@ -30,6 +31,7 @@ router.use('/notifications', notification_routes_1.default);
 router.use('/ocr', ocr_routes_1.default);
 router.use('/analytics', analytics_routes_1.default);
 router.use('/electricity', electricity_routes_1.default);
+router.use('/ai', ai_routes_1.default);
 // Nested group expense/payment routes
 router.get('/groups/:id/expenses', auth_middleware_1.authMiddleware, ExpenseController_1.expenseController.getGroupExpenses.bind(ExpenseController_1.expenseController));
 router.get('/groups/:id/payments', auth_middleware_1.authMiddleware, PaymentController_1.paymentController.getGroupPayments.bind(PaymentController_1.paymentController));

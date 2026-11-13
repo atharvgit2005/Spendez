@@ -46,9 +46,9 @@ export class AIChatService {
 
       const result = await chat.sendMessage(userMessage);
       return result.response.text();
-    } catch (error) {
+    } catch (error: any) {
       AppLogger.error('Gemini API Error:', error);
-      throw new Error('Failed to generate AI response');
+      throw new Error(`Gemini API Error: ${error.message || String(error)}`);
     }
   }
 }

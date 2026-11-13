@@ -5,16 +5,19 @@ const mongoose_1 = require("mongoose");
 const ExpenseRepository_1 = require("../repositories/ExpenseRepository");
 const AppError_1 = require("../errors/AppError");
 const EventPublisher_1 = require("../events/EventPublisher");
-const GroupMember_1 = require("../models/GroupMember");
-const Group_1 = require("../models/Group");
-const Split_1 = require("../models/Split");
+const GroupMemberRepository_1 = require("../repositories/GroupMemberRepository");
+const GroupRepository_1 = require("../repositories/GroupRepository");
+const SplitRepository_1 = require("../repositories/SplitRepository");
 const StrategyFactory_1 = require("../factories/StrategyFactory");
 class ExpenseService {
     constructor() {
         this.expenseRepo = new ExpenseRepository_1.ExpenseRepository();
+        this.splitRepo = new SplitRepository_1.SplitRepository();
+        this.groupRepo = new GroupRepository_1.GroupRepository();
+        this.groupMemberRepo = new GroupMemberRepository_1.GroupMemberRepository();
     }
     async createExpense(dto) {
-        const group = await Group_1.Group.findById(dto.groupId);
+        const group = await this.groupRepo.findById(dto.groupId);
         if (!group)
             throw new AppError_1.NotFoundError('Group', dto.groupId);
         const expenseData = {
@@ -27,7 +30,7 @@ class ExpenseService {
         // 1. Resolve participants
         let participantIds = dto.splitConfig?.participants;
         if (!participantIds || participantIds.length === 0) {
-            const members = await GroupMember_1.GroupMember.find({ groupId: dto.groupId, isActive: true });
+            const members = await this.groupMemberRepo.findByGroup(dto.groupId);
             participantIds = members.map((m) => m.userId.toString());
         }
         // 2. Select and execute strategy
@@ -39,7 +42,7 @@ class ExpenseService {
             exactAmounts: dto.splitConfig?.exactAmounts,
         });
         // 3. Persist splits
-        await Split_1.Split.insertMany(shares.map((share) => ({
+        await this.splitRepo.insertMany(shares.map((share) => ({
             ...share,
             expenseId: expense._id,
             userId: new mongoose_1.Types.ObjectId(share.userId),
@@ -78,7 +81,7 @@ class ExpenseService {
         if (expense.paidBy.toString() !== actorId) {
             throw new AppError_1.ForbiddenError('Only the payer can delete this expense');
         }
-        await Split_1.Split.deleteMany({ expenseId: expense._id });
+        await this.splitRepo.deleteByExpense(expense._id.toString());
         await this.expenseRepo.delete(id);
     }
 }
